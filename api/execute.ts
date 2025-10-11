@@ -95,7 +95,15 @@ Generate ONLY the TypeScript code (no explanations, no markdown) that fulfills t
     GEMINI_API_KEY: geminiApiKey,
   });
 
-  const responseContent = `🤖 **Command:** ${userCommand}\n${result.guildMembersInfo}\n\n_[AI-generated code executed]_`;
+  let responseContent = `🤖 **Command:** ${userCommand}\n${result.guildMembersInfo}\n\n_[AI-generated code executed]_`;
+  
+  // Discord has a 2000 character limit
+  if (responseContent.length > 2000) {
+    const truncated = responseContent.substring(0, 1950);
+    responseContent = truncated + '\n\n..._[Response truncated]_';
+    console.log(`Response truncated from ${responseContent.length} to 2000 characters`);
+  }
+  
   console.log('Sending follow-up with content length:', responseContent.length);
   
   const webhookUrl = `https://discord.com/api/v10/webhooks/${applicationId}/${interactionToken}/messages/@original`;
