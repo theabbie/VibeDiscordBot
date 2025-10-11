@@ -83,7 +83,7 @@ export default async function handler(
         
         console.log(`Task ${taskId} queued for command: ${userCommand}`);
         
-        const executeUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/api/execute`;
+        const executeUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/api/execute?t=${Date.now()}`;
         
         return res.status(200).json({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
