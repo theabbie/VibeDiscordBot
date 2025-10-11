@@ -12,7 +12,7 @@ export const config = {
 };
 
 export default async function handler(
-  req: VercelRequest,
+  req: VercelRequest & { waitUntil?: (promise: Promise<any>) => void },
   res: VercelResponse
 ) {
   if (req.method !== 'POST') {
@@ -57,7 +57,7 @@ export default async function handler(
       const executeUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/api/execute`;
       console.log('Calling execute endpoint:', executeUrl);
       
-      fetch(executeUrl, {
+      const executePromise = fetch(executeUrl, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -69,12 +69,18 @@ export default async function handler(
           applicationId: process.env.DISCORD_APPLICATION_ID,
         }),
       }).then(() => {
-        console.log('Execute call initiated');
+        console.log('Execute call completed');
       }).catch(err => {
         console.error('Execute call error:', err);
       });
 
-      await new Promise(resolve => setTimeout(resolve, 100));
+      if (req.waitUntil) {
+        req.waitUntil(executePromise);
+        console.log('Using waitUntil for background execution');
+      } else {
+        console.log('waitUntil not available, using standard fetch');
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
 
       return res.status(200).json({
         type: 5,
