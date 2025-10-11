@@ -2,6 +2,8 @@ import { VercelRequest, VercelResponse } from '@vercel/node';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AI_PROMPT } from '../src/ai-prompt';
 import { DISCORD_API_REFERENCE } from '../src/discord-api-reference';
+import { initializeFirebase } from '../src/firebase';
+import { getNextPendingTask, updateTaskStatus, cleanupOldTasks } from '../src/queue';
 
 export const config = {
   maxDuration: 10,
@@ -11,15 +13,25 @@ export default async function handler(
   req: VercelRequest,
   res: VercelResponse
 ) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { userCommand, channelId, guildId, botToken, interactionToken, applicationId } = req.body;
-
-  res.status(200).json({ status: 'processing' });
-
-  const geminiApiKey = process.env.GEMINI_API_KEY;
+  try {
+    // Initialize Firebase
+    initializeFirebase();
+    
+    // Get next pending task from queue
+    const task = await getNextPendingTask();
+    
+    if (!task) {
+      console.log('No pending tasks in queue');
+      return res.status(200).json({ status: 'no_tasks' });
+    }
+    
+    console.log(`Processing task ${task.id}: ${task.userCommand}`);
+    
+    // Respond immediately so cron doesn't timeout
+    res.status(200).json({ status: 'processing', taskId: task.id });
+    
+    const { userCommand, channelId, guildId, botToken, interactionToken, applicationId } = task;
+    const geminiApiKey = process.env.GEMINI_API_KEY;
   
   let aiGeneratedCode = '';
   try {
@@ -44,8 +56,9 @@ Generate ONLY the TypeScript code (no explanations, no markdown) that fulfills t
     aiGeneratedCode = response.text().trim();
     aiGeneratedCode = aiGeneratedCode.replace(/```typescript\n?/g, '').replace(/```\n?/g, '');
     console.log('Generated code:', aiGeneratedCode.substring(0, 200) + '...');
-  } catch (error) {
+  } catch (error: any) {
     console.error('Gemini API error:', error);
+    await updateTaskStatus(task.id, 'failed', error.message);
     await fetch(
       `https://discord.com/api/v10/webhooks/${applicationId}/${interactionToken}/messages/@original`,
       {
@@ -96,7 +109,20 @@ Generate ONLY the TypeScript code (no explanations, no markdown) that fulfills t
   });
   
   console.log('Edit response status:', editResponse.status);
-  if (!editResponse.ok) {
-    console.error('Edit error:', await editResponse.text());
+  if (editResponse.ok) {
+    await updateTaskStatus(task.id, 'completed');
+    console.log(`Task ${task.id} completed successfully`);
+  } else {
+    const errorText = await editResponse.text();
+    console.error('Edit error:', errorText);
+    await updateTaskStatus(task.id, 'failed', errorText);
+  }
+  
+  // Cleanup old tasks (older than 24 hours)
+  await cleanupOldTasks();
+  
+  } catch (error: any) {
+    console.error('Execute handler error:', error);
+    // Don't fail if we can't update status
   }
 }

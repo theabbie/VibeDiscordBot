@@ -7,6 +7,8 @@ import {
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AI_PROMPT } from '../src/ai-prompt';
 import { DISCORD_API_REFERENCE } from '../src/discord-api-reference';
+import { initializeFirebase } from '../src/firebase';
+import { addTaskToQueue } from '../src/queue';
 export const config = {
   maxDuration: 10,
 };
@@ -44,6 +46,7 @@ export default async function handler(
       const guildId = interaction.guild_id;
       const botToken = process.env.DISCORD_BOT_TOKEN;
       const geminiApiKey = process.env.GEMINI_API_KEY;
+      
       if (!geminiApiKey) {
         return res.status(200).json({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
@@ -53,38 +56,47 @@ export default async function handler(
           },
         });
       }
+
+      if (!botToken) {
+        return res.status(200).json({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: '❌ Bot token not configured',
+            flags: 64,
+          },
+        });
+      }
       
-      const executeUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/api/execute`;
-      console.log('Calling execute endpoint:', executeUrl);
-      
-      const executePromise = fetch(executeUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      try {
+        // Initialize Firebase
+        initializeFirebase();
+        
+        // Add task to queue
+        const taskId = await addTaskToQueue({
           userCommand,
           channelId,
           guildId,
           botToken,
           interactionToken: interaction.token,
-          applicationId: process.env.DISCORD_APPLICATION_ID,
-        }),
-      }).then(() => {
-        console.log('Execute call completed');
-      }).catch(err => {
-        console.error('Execute call error:', err);
-      });
-
-      if (req.waitUntil) {
-        req.waitUntil(executePromise);
-        console.log('Using waitUntil for background execution');
-      } else {
-        console.log('waitUntil not available, using standard fetch');
-        await new Promise(resolve => setTimeout(resolve, 100));
+          applicationId: process.env.DISCORD_APPLICATION_ID!,
+        });
+        
+        console.log(`Task ${taskId} queued for command: ${userCommand}`);
+        
+        // Respond immediately with deferred response
+        return res.status(200).json({
+          type: 5,
+        });
+      } catch (error) {
+        console.error('Error queuing task:', error);
+        return res.status(200).json({
+          type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
+          data: {
+            content: '❌ Failed to queue command',
+            flags: 64,
+          },
+        });
       }
-
-      return res.status(200).json({
-        type: 5,
-      });
     }
     return res.status(200).json({
       type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
