@@ -1,0 +1,25 @@
+{
+  "name": "vibe-discord-bot",
+  "version": "1.0.0",
+  "description": "Serverless Discord bot with /vibe echo command",
+  "main": "dist/index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "type-check": "tsc --noEmit",
+    "register": "tsx src/register-commands.ts"
+  },
+  "keywords": ["discord", "bot", "serverless", "vercel"],
+  "author": "abhishek7gg7@gmail.com",
+  "license": "MIT",
+  "dependencies": {
+    "discord-interactions": "^3.4.0",
+    "@google/generative-ai": "^0.21.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "@vercel/node": "^3.0.12",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3",
+    "vercel": "^33.0.1"
+  }
+}

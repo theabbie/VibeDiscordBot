@@ -1,0 +1,27 @@
+try {
+  console.log('Fetching data from Discord API...');
+  const response = await fetch(
+    `https://discord.com/api/v10/guilds/${guildId}/members?limit=10`,
+    {
+      headers: {
+        Authorization: `Bot ${BOT_TOKEN}`,
+      },
+    }
+  );
+  console.log('Response status:', response.status);
+  if (response.ok) {
+    const data = await response.json();
+    console.log('Data received:', data.length, 'items');
+    guildMembersInfo = '\n\n**Guild Members:**\n' + 
+      data.map((member) => 
+        `• ${member.user.username}${member.user.bot ? ' [BOT]' : ''}`
+      ).join('\n');
+  } else {
+    const errorText = await response.text();
+    console.error('API error:', errorText);
+    guildMembersInfo = '\n\n_Could not fetch data_';
+  }
+} catch (error) {
+  console.error('Error:', error);
+  guildMembersInfo = '\n\n_Error occurred_';
+}
