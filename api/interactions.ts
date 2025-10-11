@@ -85,12 +85,10 @@ export default async function handler(
         
         const executeUrl = `${req.headers['x-forwarded-proto'] || 'https'}://${req.headers.host}/api/execute`;
         
-        // Respond immediately with message containing invisible link to trigger execute
         return res.status(200).json({
           type: InteractionResponseType.CHANNEL_MESSAGE_WITH_SOURCE,
           data: {
             content: `🤖 Processing your command... [.](${executeUrl})`,
-            flags: 64, // Ephemeral
           },
         });
       } catch (error) {
