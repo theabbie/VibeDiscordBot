@@ -27,9 +27,6 @@ export default async function handler(
     
     console.log(`Processing task ${task.id}: ${task.userCommand}`);
     
-    // Respond immediately so cron doesn't timeout
-    res.status(200).json({ status: 'processing', taskId: task.id });
-    
     const { userCommand, channelId, guildId, botToken, interactionToken, applicationId } = task;
     const geminiApiKey = process.env.GEMINI_API_KEY;
   
@@ -121,8 +118,11 @@ Generate ONLY the TypeScript code (no explanations, no markdown) that fulfills t
   // Cleanup old tasks (older than 24 hours)
   await cleanupOldTasks();
   
+  // Respond after everything is done
+  return res.status(200).json({ status: 'completed', taskId: task.id });
+  
   } catch (error: any) {
     console.error('Execute handler error:', error);
-    // Don't fail if we can't update status
+    return res.status(500).json({ status: 'error', error: error.message });
   }
 }
