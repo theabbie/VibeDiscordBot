@@ -47,7 +47,6 @@ export async function getNextPendingTask(): Promise<QueueTask | null> {
   const taskId = Object.keys(tasks)[0];
   const task = tasks[taskId];
   
-  // Mark as processing
   await db.ref(`discord/queue/${taskId}/status`).set('processing');
   await db.ref(`discord/queue/${taskId}/processedAt`).set(Date.now());
   
