@@ -1,3 +1,4 @@
+````markdown
 # VibeDiscordBot
 
 An AI-powered Discord bot that dynamically generates and executes code based on natural language commands using Google Gemini AI.
@@ -16,8 +17,8 @@ An AI-powered Discord bot that dynamically generates and executes code based on 
 
 ## Features
 
-- 🤖 **AI-Powered Commands**: Use natural language to interact with your Discord server
-  - `/vibe command:<your natural language command>` - AI generates and executes code to fulfill your request
+- 🤖 **AI-Powered Commands**: Use natural language to interact with your Discord server  
+  - `/vibe command:<your natural language command>` - AI generates and executes code to fulfill your request  
   - Examples: "show 5 guild members", "list server roles", "get channel info"
 - 🧠 **Google Gemini Integration**: Uses Gemini 2.5 Flash for code generation
 - 🔥 **Firebase Queue System**: Reliable task queue to handle long-running operations
@@ -32,7 +33,7 @@ An AI-powered Discord bot that dynamically generates and executes code based on 
 
 ```bash
 npm install
-```
+````
 
 ### 2. Create Discord Application
 
@@ -41,8 +42,9 @@ npm install
 3. Go to the "Bot" tab and create a bot
 4. Copy the Bot Token
 5. Go to "General Information" tab and copy:
-   - Application ID
-   - Public Key
+
+   * Application ID
+   * Public Key
 
 ### 3. Set Up Firebase Realtime Database
 
@@ -94,6 +96,7 @@ vercel
 After deployment, copy your Vercel URL (e.g., `https://your-app.vercel.app`)
 
 **Important**: Add all environment variables to Vercel:
+
 1. Go to your Vercel project dashboard
 2. Settings → Environment Variables
 3. Add all variables from `.env.local`
@@ -126,9 +129,10 @@ This runs the task processor every minute. Redeploy after adding this.
 1. Go to "OAuth2" → "URL Generator"
 2. Select scopes: `bot`, `applications.commands`
 3. Select bot permissions (minimal recommended):
-   - `View Channels`
-   - `Send Messages`
-   - `Read Message History`
+
+   * `View Channels`
+   * `Send Messages`
+   * `Read Message History`
 4. Copy the generated URL and open it in your browser
 5. Select a server and authorize
 
@@ -163,9 +167,9 @@ Then update your Discord Interactions Endpoint URL to the ngrok URL.
 │   ├── queue.ts           # Task queue management
 │   └── register-commands.ts  # Script to register slash commands
 ├── .env.example           # Environment variables template
-├── vercel.json           # Vercel configuration
-├── package.json          # Dependencies and scripts
-└── tsconfig.json         # TypeScript configuration
+├── vercel.json            # Vercel configuration
+├── package.json           # Dependencies and scripts
+└── tsconfig.json          # TypeScript configuration
 ```
 
 ## How It Works
@@ -174,26 +178,30 @@ Then update your Discord Interactions Endpoint URL to the ngrok URL.
 
 1. **User sends `/vibe` command** → Discord sends interaction to `/api/interactions`
 2. **Interactions endpoint**:
-   - Verifies Discord signature
-   - Adds task to Firebase Realtime Database queue
-   - Responds immediately with "thinking..." (deferred response)
+
+   * Verifies Discord signature
+   * Adds task to Firebase Realtime Database queue
+   * Responds immediately with "thinking..." (deferred response)
 3. **Vercel Cron** calls `/api/execute` every minute
 4. **Execute endpoint**:
-   - Fetches next pending task from queue
-   - Sends user command to Google Gemini AI
-   - AI generates TypeScript code to fulfill the command
-   - Executes the generated code in a sandboxed context
-   - Updates the Discord message with results
-   - Marks task as completed in queue
+
+   * Fetches next pending task from queue
+   * Sends user command to Google Gemini AI
+   * AI generates TypeScript code to fulfill the command
+   * Executes the generated code in a sandboxed context
+   * Updates the Discord message with results
+   * Marks task as completed in queue
 
 ### Queue System
 
 The bot uses Firebase Realtime Database as a task queue because **Vercel's serverless functions have strict limitations**:
-- Functions terminate immediately after sending a response
-- Background execution is unreliable
-- 10-second maximum execution time (even with paid plans)
+
+* Functions terminate immediately after sending a response
+* Background execution is unreliable
+* 10-second maximum execution time (even with paid plans)
 
 **Queue Structure** (`discord/queue`):
+
 ```typescript
 {
   id: string,
@@ -214,23 +222,48 @@ Tasks older than 24 hours are automatically cleaned up.
 
 ## Commands
 
-- `/vibe command:<natural language command>` - AI generates and executes code based on your command
+* `/vibe command:<natural language command>` - AI generates and executes code based on your command
 
 **Example commands:**
-- `show 5 guild members`
-- `list server roles`
-- `get channel information`
-- `count messages in this channel`
-- `show server info`
+
+* `show 5 guild members`
+* `list server roles`
+* `get channel information`
+* `count messages in this channel`
+* `show server info`
 
 ## Tech Stack
 
-- **Runtime**: Node.js 20 with TypeScript
-- **Hosting**: Vercel (Serverless Functions)
-- **AI**: Google Gemini 2.5 Flash
-- **Database**: Firebase Realtime Database (task queue)
-- **Discord API**: discord-interactions library
-- **Package Manager**: npm
+* **Runtime**: Node.js 20 with TypeScript
+* **Hosting**: Vercel (Serverless Functions)
+* **AI**: Google Gemini 2.5 Flash
+* **Database**: Firebase Realtime Database (task queue)
+* **Discord API**: discord-interactions library
+* **Package Manager**: npm
+
+## ⚙️ Troubleshooting & Debugging
+
+If you encounter issues during setup or runtime, try the following steps:
+
+### Common Issues
+
+| Problem                                          | Cause                                       | Solution                                                                                  |
+| ------------------------------------------------ | ------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| **Bot not responding**                           | Interactions endpoint not verified          | Recheck your Discord Developer Portal → General Information → "Interactions Endpoint URL" |
+| **`403 Forbidden` error**                        | Missing bot permissions                     | Ensure the bot has at least “Send Messages” and “View Channels” permissions               |
+| **Firebase permission errors**                   | Incorrect or malformed service account JSON | Copy your Firebase JSON key into `.env.local` as a single line string                     |
+| **Gemini API not generating**                    | Invalid or expired API key                  | Generate a new key from [Google AI Studio](https://aistudio.google.com/app/apikey)        |
+| **Cron not triggering tasks**                    | Missing cron setup in `vercel.json`         | Verify your Vercel project includes the `crons` configuration and redeploy                |
+| **Unexpected token errors in AI-generated code** | Gemini generated malformed code             | Re-run the command; AI output may vary between requests                                   |
+
+### Debug Tips
+
+* Use `console.log()` generously in your code to inspect interaction payloads
+* Use `Firebase Console → Realtime Database → Data` tab to inspect the queue in real time
+* Use `npm run dev` with [ngrok](https://ngrok.com/) to test local behavior
+* Always check Vercel function logs (`vercel logs <deployment-url>`)
+
+---
 
 ## ⚠️ Why Vercel Makes This Harder Than It Should Be
 
@@ -239,25 +272,19 @@ Vercel's serverless architecture introduces significant challenges for Discord b
 ### The Problems
 
 1. **Immediate Response Requirement**: Discord requires a response within 3 seconds
-2. **Long AI Processing**: Gemini API takes 2-6 seconds to generate code
+2. **Long AI Processing**: Gemini API takes 2–6 seconds to generate code
 3. **Function Termination**: Vercel kills functions immediately after sending a response
 4. **No True Background Jobs**: `waitUntil` and separate routes still share execution context
 5. **Timeout Limitations**: Even with `maxDuration: 10`, functions are unreliable for long tasks
 
-### What We Tried (That Didn't Work)
-
-- ❌ Deferred responses with `setImmediate()` - function killed after response
-- ❌ Separate `/api/execute` route called from `/api/interactions` - parent kills child
-- ❌ Vercel's `waitUntil` API - unreliable, still terminates early
-- ❌ Increasing `maxDuration` - helps but doesn't solve the core issue
-
 ### The Solution: External Queue
 
 We implemented a **Firebase-based task queue** that decouples command receipt from execution:
-- Commands are queued instantly (< 100ms)
-- Vercel Cron processes the queue independently
-- Each cron invocation is a fresh function with full 10-second timeout
-- No parent-child dependency issues
+
+* Commands are queued instantly (< 100ms)
+* Vercel Cron processes the queue independently
+* Each cron invocation is a fresh function with full 10-second timeout
+* No parent-child dependency issues
 
 ### Recommendation: Self-Host Instead
 
@@ -280,19 +307,21 @@ npm start
 ```
 
 **Benefits of self-hosting:**
-- No artificial timeouts
-- True background processing
-- No need for external queue (can use in-memory queue)
-- Simpler architecture
-- Lower latency
-- No cold starts
-- Better debugging
+
+* No artificial timeouts
+* True background processing
+* No need for external queue (can use in-memory queue)
+* Simpler architecture
+* Lower latency
+* No cold starts
+* Better debugging
 
 **Self-hosting options:**
-- VPS (DigitalOcean, Linode, AWS EC2)
-- Docker container
-- Kubernetes cluster
-- Railway.app (simpler than Vercel for bots)
-- Fly.io
 
-The Firebase queue system works but adds complexity and latency (1-60 seconds delay depending on cron frequency). Self-hosting eliminates these issues entirely.
+* VPS (DigitalOcean, Linode, AWS EC2)
+* Docker container
+* Kubernetes cluster
+* Railway.app (simpler than Vercel for bots)
+* Fly.io
+
+The Firebase queue system works but adds complexity and latency (1–60 seconds delay depending on cron frequency). Self-hosting eliminates these issues entirely.
